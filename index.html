@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Simple landing page</title>
+
+		<script defer crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+		<script defer crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+		<script defer src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+		<link rel="stylesheet" href="https://unpkg.com/normalize.css">
+
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+	</head>
+	<body>
+		<main id="root"></main>
+		<script type="text/babel">
+
+			const LoadingOverlay = () => {
+				return (
+					<div className="loader-overlay">
+						<div className="loader-spinner"></div>
+					</div>
+				)
+			}
+
+			const FormInput = (props) => {
+				//refs
+				const inputRef = React.useRef(null)
+				const timeOutRef = React.useRef(null)
+				// states
+				const [inputFocus, setInputFocus] = React.useState(false)
+				const [value, setValue] = React.useState(props.defaultValue ?? '')
+
+				// variables
+				const additionalClassName = ` ${inputFocus ? "focused" : "" } ${value ? "valued" : "value"} ${props.isError ? "errored" : ""}`
+
+
+				// events
+				
+				const handleClickContainer = () => {
+					inputRef.current.focus()
+				}
+
+				const handleOnInputFocus = () => {
+					setInputFocus(true)		
+				}
+
+				const handleOnInputBlur = () => {
+					setInputFocus(false)
+				}
+
+				const handleChange = (e) => {
+					setValue(e.target.value)
+					clearTimeout(timeOutRef.current)
+					timeOutRef.current = setTimeout(() => {
+						props.handleChange(e.target.value)
+					}, 250)
+				}
+
+				return (
+					<div className={"form-input" + additionalClassName} onClick={handleClickContainer}>
+						<div className="form-content">
+							<div className="form-label">
+								<span>{props.title}</span>
+							</div>
+							<div className="form-input-field">
+								<input
+									{...props.inputProps}
+									onFocus={handleOnInputFocus}
+									onBlur={handleOnInputBlur}
+									ref={inputRef}
+									type="text"
+									value={value}
+									onChange={handleChange}
+									/>
+							</div>
+						</div>
+						<div className="form-helper">
+							<div>{props.isError && props.errorMsg}</div>
+						</div>
+					</div>
+				)
+			}
+
+			const emailRegex = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
+
+			const ModalSignUpContent = () => {
+				//states
+				const [data, setData] = React.useState({
+					name: '',
+					isUpdateName: false,
+					email: '',
+					isUpdateEmail: false,
+				})
+
+				// idle, loading, success, error
+				const [signUpStatus, setSignUpStatus] = React.useState('idle')
+
+				// variables
+				const isNameInvalid = !Boolean(data.name.trim()) && data.isUpdateName
+				const isEmailInvalid = !emailRegex.test(data.email.trim()) && data.isUpdateEmail
+				const isCanSubmit = !isNameInvalid && !isEmailInvalid && data.name && data.email
+
+				const isSubmitting = signUpStatus === "loading"
+				const isSubmitSuccess = signUpStatus === "success"
+
+				// events
+				const handleSubmit = async () => {
+					// TODO: handle submit when user try to enter in the input
+					const submitData = {
+						name: data.name.trim(),
+						email: data.email.trim()
+					}
+
+					try {
+						const promise = new Promise((resolve) => {
+							setTimeout(() => {
+								console.log("Sending....");
+								resolve(submitData)
+							}, 5000)
+						})
+
+						setSignUpStatus("loading")
+						const value = await promise
+						setSignUpStatus("success")
+						console.log("Submit data:", value)
+					} catch(err) {
+						setSignUpStatus("error")
+						console.log("Some problem occur")
+					}
+				}
+
+				const handleChangeName = (value) => {
+					setData(prev => {
+						if(!prev.isUpdateName){
+							return {...prev, name: value, isUpdateName: true}	
+						}
+
+						return {...prev, name: value}
+					})	
+				}
+
+				const handleChangeEmail = (value) => {
+					setData(prev => {
+						if(!prev.isUpdateEmail){
+							return {...prev, email: value, isUpdateEmail: true}	
+						}
+
+						return {...prev, email: value}
+					})
+				}
+
+				// render
+
+				if(isSubmitSuccess){
+					// TODO: break a new notify component, but I lazy a littlebit :V
+					return (
+						<div class="form-notify">
+							<div class="notify-banner">
+								<svg xmlns="http://www.w3.org/2000/svg" width="88" height="92" viewBox="0 0 88 92" fill="none"><path d="M87.7417 21.0334C87.6583 18.0417 85.5042 15.5084 82.575 15.0042C65.4833 12.3917 49.0417 2.2292 47.2917 1.13337C45.4583 -0.087462 42.8167 -0.216629 40.7417 1.13337C40.5792 1.2167 23.2833 12.2667 5.3375 15.0042C2.4875 15.5125 0.333333 18.0417 0.25 21.1209C0.25 23.1875 0.370831 71.85 41.6375 91.3292C42.45 91.6625 43.2625 91.8334 43.9958 91.8334C45.0125 91.8334 45.9083 91.5375 46.4792 91.2834C88.6375 71.3834 87.7833 21.3292 87.7417 21.0334ZM40.9458 83.95C6.4375 65.3084 6.35417 23.0167 6.27083 21.2459C20.9208 19.0125 34.9208 11.7167 40.9417 8.30004V83.95H40.9458ZM47.05 83.95V8.30004C53.1542 11.8 67.1125 19.0542 81.6417 21.2875C81.6375 21.7084 82.5333 64.8459 47.05 83.95Z" fill="#0F1419"/></svg>	
+							</div>
+							<div class="notify-content">
+								<p class="notify-title">Authenticate your account</p>
+								<p class="notify-subtitle">Check your email to make sure that you're a real person.</p>
+							</div>
+						</div>
+					)
+				}
+
+				return (
+					<div className="form-content-sign-up">
+						<div className="form-title">
+							<p>Create your account</p>
+						</div>
+						<div className="form-container">
+							<FormInput
+								title="Name"
+								inputProps={{autoFocus: true, maxlength: 50}}
+								isError={isNameInvalid}
+								handleChange={handleChangeName}
+								errorMsg={"What's your name?"}
+							/>	
+
+							<FormInput
+								title="Email"
+								inputProps={{maxlength: 254}}
+								isError={isEmailInvalid}
+								handleChange={handleChangeEmail}
+								errorMsg={"Please enter a valid email."}
+							/>
+
+							<div className="form-divider"></div>
+
+							<Button
+								title="Submit"
+								isDisabled={!isCanSubmit} 
+								kind="primary" 
+								style={{ minHeight: 50 }}
+								handleClick={handleSubmit}
+							/>
+						</div>
+						{isSubmitting && <LoadingOverlay />}
+					</div>
+				)
+			}
+
+			const Modal = (props) => {		
+				return (
+					<div className="modal">
+						<div className="overlay">
+							<div className="modal-container">
+								<div className="modal-header">
+									<button className="close-modal-btn" onClick={props.handleClose}>
+										<svg viewBox="0 0 24 24" ariaHidden="true" style={{color: "rgb(15, 20, 25"}}><g><path d="M10.59 12L4.54 5.96l1.42-1.42L12 10.59l6.04-6.05 1.42 1.42L13.41 12l6.05 6.04-1.42 1.42L12 13.41l-6.04 6.05-1.42-1.42L10.59 12z"></path></g></svg>
+									</button>
+								</div>
+								<div className="modal-content">
+									{props.content}
+								</div>
+							</div>
+						</div>
+					</div>
+				)
+			}
+
+			const Button = (props) => {
+					const isDisabled = props.isDisabled
+
+					const handleClick = () => {
+						if(isDisabled) return;		
+						props.handleClick();
+					}
+
+					return (
+						<div 
+							className={`button ${isDisabled && "disabled"} ${props.kind}`}
+							role="button"
+							disabled={isDisabled}
+							style={props.style}
+							onClick={handleClick}
+							>
+								<span className="btn-title">{props.title}</span>
+						</div>
+					)
+			}
+
+			const UnAuthForm = () => {
+				// state
+				const [showSignUpModal, setShowSignUpModal] = React.useState(false)
+
+				// events
+
+				const handleCloseModal = () => {
+					setShowSignUpModal(false)
+				}
+
+				const handleOpenModal = () => {
+					setShowSignUpModal(true)
+				}
+
+				// render
+				return (
+					<div className="unauth-form">
+						<div className="title">
+							<p>Happening now</p>
+						</div>
+						<div className="sub-title">
+							<p>Join today</p>
+						</div>
+						<div className="form-content">
+							<Button title="Create account" kind="primary" style={{maxWidth: 300}} handleClick={handleOpenModal}/>
+						</div>
+						{
+							showSignUpModal 
+							&& ReactDOM.createPortal(<Modal handleClose={handleCloseModal} content={<ModalSignUpContent />}/>, document.body)
+						}
+					</div>
+				)
+			}
+
+			const App = () => {
+					return (
+						<div className="main-app">
+							<div className="left-container">
+								<div className="logo-banner">
+									<svg viewBox="0 0 24 24" aria-hidden="true"><g><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></g></svg>
+								</div>
+							</div>
+							<div className="right-container">
+								<div className="form-container">	
+									<UnAuthForm />
+								</div>
+							</div>
+						</div>
+					)			
+			}	
+
+			const root = ReactDOM.createRoot(document.getElementById("root"))
+			root.render(<App />)
+		</script>
+		<style>	
+			:root {
+				--border-color: rgb(207, 217, 222);
+				--border-action-color: rgb(29, 155, 240);
+				--primary: rgb(29, 155, 240);
+				--primary-hover: rgb(26, 140, 216);
+				--btn-background: rgba(29, 155, 240, 0.1);
+				--secondary: rgb(83, 100, 113);
+				--white: rgb(255,255,255);
+				--btn-disabled: rgb(15, 20, 15);
+				--error: rgb(244, 33, 46);
+			}
+
+			html{
+				font-family: "Roboto", apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+				color: rgb(15, 20, 15);
+			}
+
+			p {
+				padding: 0;
+				margin: 0;
+			}
+
+			.main-app {	
+				width: 100%;
+				height: 100vh;
+				display: flex;
+			}
+
+			.left-container {
+				flex: 1;
+				display: flex;
+				align-items: center;
+
+				.logo-banner {
+					width: 100%;
+					height: 100%;
+					display: flex;
+					justify-content: center;
+				}
+
+				svg{
+					max-height: 350px;
+					padding: 32px;
+				}
+			}	
+
+			.right-container {
+				display: none;
+				align-items: center;
+				min-width: 45vw;
+
+				.form-container {
+					padding: 16px;	
+				}
+			} 
+
+			@media screen and (min-width: 1024px) {
+				.right-container {
+						display: flex;
+				}	
+			}
+
+			.unauth-form {
+				min-width: 437px;
+				padding: 20px;
+
+				.title {
+					word-wrap: break-word;	
+					font-size: 64px;
+					line-height: 84px;
+					letter-spacing: -1.2px;
+					font-weight: 700;
+
+					margin: 48px 0;
+				}
+
+				.sub-title {
+					word-wrap: break-word;
+					font-size: 31px;
+					line-height: 36px;
+					font-weight: 700;
+
+					margin-bottom: 32px;
+				}
+			}
+
+			.button {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				cursor: pointer;
+
+				min-height: 36px;
+				transition: background-color 0.2s;
+
+
+				.btn-title {
+					font-size: 15px;
+					line-height: 20px;
+					font-weight: 700;	
+				}
+			}
+
+			.button {
+				border: 1px solid var(--border-color);
+				border-radius: 9999px;
+				
+				color: var(--primary);
+				background-color: rgba(0,0,0,0);
+			}
+
+			.button:hover {	
+				background-color: var(--btn-background)
+			}
+
+			.button.primary {
+					color: var(--white);
+					border: none;
+					background-color: var(--primary);
+			}
+
+			.button.primary:hover {
+					background-color: var(--primary-hover);
+			}
+
+			.button.disabled {
+				background-color: var(--btn-disabled);
+				color: var(--white);
+				opacity: 0.5;
+				cursor: default;
+				border: none;
+			}
+
+			.button.disabled:hover {
+				background-color: var(--btn-disabled);
+			}
+
+			.modal {
+				position: fixed;	
+				top: 0;
+				left: 0;
+				right: 0;
+				bottom: 0;
+				min-height: 100dvh;
+
+				.overlay {
+					display: flex;
+					align-items: center;
+					justify-content: center;
+
+					height: 100%;
+					background-color: rgba(0, 0, 0, 0.4);
+				}
+
+				.modal-container {
+					min-width: 600px;
+					max-width: 80vw;
+
+					min-height: 400px;
+					max-height: 90vh;
+
+					overflow-x: hidden;
+					overflow-y: hidden;
+
+					border-radius: 16px;
+					background-color: rgba(255, 255, 255, 1);
+
+					display: flex;
+					flex-direction: column;
+
+					.modal-header {
+						display: flex;
+						align-items: center;
+
+						height: 53px;	
+						padding: 0 16px;
+
+						.close-modal-btn {
+								width: 36px;
+								height: 36px;
+								display: flex;
+								align-items: center;
+								justify-content: center;
+
+								cursor: pointer;
+								border-radius: 999px;
+
+								border: none;
+								outline: none;
+								background: transparent;
+
+								background-color: rgba(15, 20, 25, 0);
+								transition: background-color 0.2s;
+
+								svg {
+									height: 20px;
+								}
+						}
+
+						.close-modal-btn:hover {
+								background-color: rgba(15, 20, 25, 0.1);
+						}
+					}
+
+					.modal-content {
+						display: flex;
+						flex: 1;
+
+						overflow-x: auto;
+						overflow-y: auto;
+					}
+				}
+
+				.form-content-sign-up {
+					width: 100%;
+
+					position: relative;
+
+					padding: 0 80px;
+
+					.form-title {
+						margin: 20px 0;
+
+						font-size: 31px;
+						line-height: 36px;
+						font-weight: 700;
+					}
+
+					.form-divider {
+						padding: 16px 0;
+					}
+						
+				}
+			}
+
+			.form-input {
+				padding: 12px 0;
+
+				.form-helper {
+					font-size: 13px;
+					line-height: 16px;
+					font-weight: 400;
+				}
+
+				.form-content {
+					height: 56px;
+					border: 1px solid var(--border-color);
+					border-radius: 4px;
+
+					overflow: hidden;
+					position: relative;
+					box-shadow: transparent 0 0 0 1px;
+				}
+
+				.form-label {
+					position: absolute;
+					top: 0;
+					left: 0;
+					padding: 16px 8px 0 8px;
+					display: block;
+
+					transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1) 0s, color 150ms cubic-bezier(0.4, 0, 0.2, 1) 0s, font-size 150ms cubic-bezier(0.4, 0, 0.2, 1) 0s, padding-top 150ms cubic-bezier(0.4, 0, 0.2, 1) 0s;
+					color: var(--secondary);
+					font-size: 17px;	
+					line-height: 24px;
+
+					span {
+						font-weight: 400;
+						display: block;
+					}
+				}
+
+				.form-input-field {
+					margin-top: 16px;
+					padding: 8px;
+					padding-top: 12px;
+				}
+
+				input {
+					line-height: 20px;
+					font-size: 17px;
+					outline: none;
+					border: none;
+					width: 100%;
+					box-sizing: border-box;
+					margin: 0;
+					padding: 0;
+				}	
+			}
+
+			.form-input.value:not(.focused) .form-label {
+				color: var(--secondary) !important;
+			}
+
+			.form-input.focused, .form-input.valued {
+					.form-label {
+						padding-top: 8px;
+						line-height: 16px;
+						font-size: 13px;
+					}
+			}
+
+			.form-input.focused {
+					.form-content {
+						box-shadow: var(--border-action-color) 0 0 0 1px;
+						border-color: var(--border-action-color);
+					}
+
+					.form-label {
+						color: var(--border-action-color);
+					}
+			}
+
+			.form-input.focused.errored {
+				.form-content {
+					box-shadow: var(--error) 0 0 0 1px;
+				}
+			}
+
+			.form-input.errored {
+				.form-content {
+					border-color: var(--error);
+				}
+
+				.form-label {
+					color: var(--error);
+				}
+
+				.form-helper {
+					color: var(--error);
+				}
+			}
+
+			.loader-overlay {
+					position: absolute;	
+					width: 100%;
+					height: 100%;
+					top: 0;
+					left: 0;
+
+					background: var(--white);
+					opacity: 0.5;
+
+					display: flex;
+					justify-content: center;
+					align-items: center;
+
+					.loader-spinner {
+						width: 48px;
+						height: 48px;
+						border: 5px solid var(--primary);
+						border-bottom-color: transparent;
+						border-radius: 50%;
+						display: inline-block;
+						box-sizing: border-box;
+						animation: rotation 1s linear infinite;
+					}
+			}
+			@keyframes rotation {
+				0% {
+					transform: rotate(0deg);
+				}
+				100% {
+					transform: rotate(360deg);
+				}
+			}
+
+			.form-notify {
+				padding: 7px 24px;
+
+				width: 100%;
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+				align-items: center;
+
+				text-align: center;
+				
+				.notify-banner {
+					width: 20%;	
+					martin-top: 10%;
+					margint-bottom: 5%;
+				}
+				.notify-content {
+					width: 90%;
+					.notify-title {
+						margin-top: 10%;
+						font-weight: 700;
+						font-size: 31px;
+						line-height: 36px;
+						letter-spacing: -0.2px;
+						color: #0F1419;
+					}
+					.notify-subtitle {
+						margin-top: 5%;
+						font-size: 15px;
+						line-height: 20px;
+						font-weight:400;
+					}
+				}
+			}
+		</style>
+	</body>
+</html>
